@@ -1,175 +1,278 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Google Sign-In and Data Table</title>
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
-    <meta name="google-signin-client_id" content="CLIENT_ID">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Trial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        /* Add your styles here */
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        :root {
+            --primary-color: #1c90ff;
+            --hover-color: #003870;
+            --text-color: #333;
+            --input-background: #fff;
+            --input-border: #ccc;
         }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+        body {
+            font-family: 'Play', sans-serif;
+            margin: 0;
+            padding: 0;
         }
-        th {
-            background-color: #f2f2f2;
+        .form-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: transparent;
+            z-index: 1000;
+        }
+        .form-container {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+            width: 300px;
+        }
+        .logo-container img {
+            max-width: 60px;
+            height: auto;
+            display: block;
+            margin: 10px auto;
+            margin-bottom: 10px;
+            margin-top: 0px;
+            align-items: right;
+        }
+        #lead-form {
+            padding: 10px;
+        }
+        #lead-form label, #lead-form p {
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 12px;
+            font-family: 'Play', sans-serif;
+        }
+        #lead-form input[type="text"], #lead-form input[type="email"], #lead-form input[type="tel"], #lead-form select {
+            width: calc(100% - 10px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--input-border);
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: 'Play', sans-serif;
+            font-size: 12px;
+        }
+        #button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            margin-bottom: 5px;
+            width: calc(100% - 10px);
+        }
+        button {
+            width: 48%;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Play', sans-serif;
+        }
+        button.submit {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 12px;
+            font-family: 'Play', sans-serif;
+        }
+        button.submit:hover {
+            background-color: var(--hover-color);
+        }
+        button.close {
+            background-color: #888;
+            color: white;
+            border: none;
+            font-size: 12px;
+            font-family: 'Play', sans-serif;
+        }
+        button.close:hover {
+            background-color: #666;
+        }
+        small {
+            display: block;
+            font-size: 8px;
+            color: #666;
+            margin-top: -5px;
+            margin-bottom: 5px;
+        }
+        .required {
+            color: red;
         }
     </style>
+
+    <!-- Snap Pixel Code -->
+    <script type='text/javascript'>
+    (function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function()
+    {a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};
+    a.queue=[];var s='script';r=t.createElement(s);r.async=!0;
+    r.src=n;var u=t.getElementsByTagName(s)[0];
+    u.parentNode.insertBefore(r,u);})(window,document,
+    'https://sc-static.net/scevent.min.js');
+
+    snaptr('init', '5217a3a7-5f50-4c98-803c-a73c9f05737e', {
+    'user_email': '__INSERT_USER_EMAIL__'
+    });
+
+    snaptr('track', 'PAGE_VIEW');
+    </script>
+    <!-- End Snap Pixel Code -->
 </head>
 <body>
-    <div class="g-signin2" data-onsuccess="onSignIn"></div>
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>Member ID</th>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Membership Name</th>
-                <th>Expiration Date</th>
-                <th>Status</th>
-                <th>Current Status</th>
-                <th>Home Location</th>
-                <th>Associate name</th>
-                <th>Follow up date -1</th>
-                <th>Followup comments</th>
-                <th>Associate name</th>
-                <th>Follow up date -2</th>
-                <th>Followup comments</th>
-                <th>Associate name</th>
-                <th>Follow up date -3</th>
-                <th>Followup comments</th>
-                <th>Status</th>
-                <th>Next Follow up date</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Rows will be added here dynamically -->
-        </tbody>
-    </table>
+    <div class="form-overlay" id="form-overlay">
+        <div class="form-container">
+            <form id="lead-form">
+                <div class="logo-container">
+                    <img src="https://i.imgur.com/9mOm7gP.png" alt="Logo">
+                </div>
+                <label for="firstName">First Name <span class="required">*</span></label>
+                <input type="text" id="firstName" name="firstName" required>
+                
+                <label for="lastName">Last Name <span class="required">*</span></label>
+                <input type="text" id="lastName" name="lastName" required>
+                
+                <label for="email">Email <span class="required">*</span></label>
+                <input type="email" id="email" name="email" required>
+                
+                <label for="phoneNumber">Phone Number <span class="required">*</span></label>
+                <input type="tel" id="phoneNumber" name="phoneNumber" required placeholder="+91XXXXXXXXXX" oninput="formatPhoneNumber()">
+                
+                <label for="time">What is your preferred time to connect?<span class="required">*</span></label>
+                <select id="time" name="time" required>
+                    <option value="" disabled selected>Preferred Time</option>
+                    <option value="Any">Any</option>
+                    <option value="Morning">Morning</option>
+                    <option value="Noon">Noon</option>
+                    <option value="Evening">Evening</option>
+                </select>
+
+                <label for="center">Select a Studio Location<span class="required">*</span></label>
+                <select id="center" name="center" required>
+                    <option value="" disabled selected>Select Preferred Studio Location</option>
+                    <option value="Supreme Headquarters, Bandra">Supreme Headquarters, Bandra</option>
+                    <option value="Kwality House, Kemps Corner">Kwality House, Kemps Corner</option>
+                </select>
+                
+                <div id="additional-questions" style="display: none;">
+                    <label for="classType">Select a Class Type <span class="required">*</span></label>
+                    <select id="classType" name="classType">
+                        <option value="" disabled selected>Select Class Type</option>
+                        <option value="Barre 57">Barre 57</option>
+                        <option value="Physique 57 PowerCycle">Physique 57 PowerCycle</option>
+                        <option value="Foundations">Foundations</option>
+                    </select>
+
+                    <div id="shoe-size-question" style="display: none;">
+                        <label for="shoeSize">Shoe Size</label>
+                        <select id="shoeSize" name="shoeSize">
+                            <option value="" disabled selected>Select Shoe Size</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="button-container">
+                    <button id="close-button" class="close">Close</button>    
+                    <button type="submit" class="submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
-        function onSignIn(googleUser) {
-            var profile = googleUser.getBasicProfile();
-            console.log('ID: ' + profile.getId());
-            console.log('Name: ' + profile.getName());
-            console.log('Image URL: ' + profile.getImageUrl());
-            console.log('Email: ' + profile.getEmail());
+        const formOverlay = document.getElementById('form-overlay');
+        const closeButton = document.getElementById('close-button');
+        const submitButton = document.querySelector('button[type=submit]');
+        const centerSelect = document.getElementById('center');
+        const classTypeSelect = document.getElementById('classType');
+        const additionalQuestions = document.getElementById('additional-questions');
+        const shoeSizeQuestion = document.getElementById('shoe-size-question');
 
-            // Load data from Google Sheets
-            loadDataFromSheets();
-        }
+        closeButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            formOverlay.style.display = 'none';
+        });
 
-        function initClient() {
-            gapi.client.init({
-                apiKey: 'CLIENT_API_KEY',
-                discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"],
-                clientId: 'CLIENT_ID',
-                scope: 'https://www.googleapis.com/auth/spreadsheets.readonly'
-            }).then(function () {
-                gapi.auth2.getAuthInstance().signIn().then(function () {
-                    loadDataFromSheets();
-                });
-            }, function(error) {
-                console.log(JSON.stringify(error, null, 2));
-            });
-        }
-
-        function loadDataFromSheets() {
-            gapi.client.sheets.spreadsheets.values.get({
-                spreadsheetId: '1WD16t5c2ro8BynlKNnLqCOxxiRgXPQpPagVTAQPjjBI',
-                range: 'Expirations!A2:I'
-            }).then(function(response) {
-                var range = response.result;
-                if (range.values.length > 0) {
-                    var table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
-                    for (i = 0; i < range.values.length; i++) {
-                        var row = table.insertRow(-1);
-                        for (j = 0; j < range.values[i].length; j++) {
-                            var cell = row.insertCell(j);
-                            cell.innerHTML = range.values[i][j];
-                        }
-                        // Add additional columns for editable fields
-                        addEditableColumns(row);
-                    }
-                } else {
-                    console.log('No data found.');
-                }
-            }, function(response) {
-                console.log('Error: ' + response.result.error.message);
-            });
-        }
-
-        function addEditableColumns(row) {
-            // Add Associate name dropdown
-            var cell = row.insertCell(-1);
-            var select = document.createElement("select");
-            var options = ["Wungsingla Wangsop", "Santhosh Kumar", "Nizam Uddin"];
-            for (var i = 0; i < options.length; i++) {
-                var option = document.createElement("option");
-                option.value = options[i];
-                option.text = options[i];
-                select.appendChild(option);
+        centerSelect.addEventListener('change', function() {
+            if (centerSelect.value === 'Supreme Headquarters, Bandra') {
+                additionalQuestions.style.display = 'block';
+            } else {
+                additionalQuestions.style.display = 'none';
             }
-            cell.appendChild(select);
+        });
 
-            // Add Follow up date -1
-            cell = row.insertCell(-1);
-            var input = document.createElement("input");
-            input.type = "date";
-            cell.appendChild(input);
-
-            // Add Followup comments -1
-            cell = row.insertCell(-1);
-            var textarea = document.createElement("textarea");
-            cell.appendChild(textarea);
-
-            // Repeat for Follow up date -2, -3 and comments
-            for (var i = 2; i <= 3; i++) {
-                cell = row.insertCell(-1);
-                select = document.createElement("select");
-                for (var j = 0; j < options.length; j++) {
-                    option = document.createElement("option");
-                    option.value = options[j];
-                    option.text = options[j];
-                    select.appendChild(option);
-                }
-                cell.appendChild(select);
-
-                cell = row.insertCell(-1);
-                input = document.createElement("input");
-                input.type = "date";
-                cell.appendChild(input);
-
-                cell = row.insertCell(-1);
-                textarea = document.createElement("textarea");
-                cell.appendChild(textarea);
+        classTypeSelect.addEventListener('change', function() {
+            if (classTypeSelect.value === 'Physique 57 PowerCycle') {
+                shoeSizeQuestion.style.display = 'block';
+            } else {
+                shoeSizeQuestion.style.display = 'none';
             }
+        });
 
-            // Add Status dropdown
-            cell = row.insertCell(-1);
-            select = document.createElement("select");
-            var statusOptions = ["Active", "Inactive", "Expired"];
-            for (var i = 0; i < statusOptions.length; i++) {
-                option = document.createElement("option");
-                option.value = statusOptions[i];
-                option.text = statusOptions[i];
-                select.appendChild(option);
+        document.getElementById('lead-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            submitButton.disabled = true;
+            submitButton.innerText = 'Submitting...';
+
+            const formData = new FormData(this);
+            const data = {
+                token: "DOjMVL37
+KslbaIzmYv6jTgttJz6qlWEG",
+data: {
+firstName: formData.get('firstName'),
+lastName: formData.get('lastName'),
+email: formData.get('email'),
+phoneNumber: formData.get('phoneNumber'),
+time: formData.get('time'),
+center: formData.get('center'),
+classType: formData.get('classType'),
+shoeSize: formData.get('shoeSize')
+}
+};
+                                                                      fetch("https://hooks.zapier.com/hooks/catch/10402093/3sb8825/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("Form submitted successfully!");
+                formOverlay.style.display = 'none';
+            } else {
+                alert("Form submission failed.");
             }
-            cell.appendChild(select);
+        })
+        .catch(error => {
+            alert("Form submission failed.");
+            console.error("Error:", error);
+        })
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.innerText = 'Submit';
+        });
+    });
 
-            // Add Next Follow up date
-            cell = row.insertCell(-1);
-            input = document.createElement("input");
-            input.type = "date";
-            cell.appendChild(input);
+    function formatPhoneNumber() {
+        const phoneNumber = document.getElementById('phoneNumber');
+        phoneNumber.value = phoneNumber.value.replace(/[^0-9+]/g, '');
+        if (!phoneNumber.value.startsWith('+91')) {
+            phoneNumber.value = '+91' + phoneNumber.value.replace(/^\+91/, '');
         }
-
-        gapi.load('client:auth2', initClient);
-    </script>
+    }
+</script>
 </body>
 </html>
