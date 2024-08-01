@@ -126,6 +126,25 @@
     snaptr('track', 'PAGE_VIEW');
     </script>
     <!-- End Snap Pixel Code -->
+    
+    <!-- Meta Pixel Code -->
+    <script>
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window,document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', 'YOUR_PIXEL_ID');
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+        src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+
 </head>
 <body>
     <div class="form-overlay" id="form-overlay">
@@ -170,18 +189,6 @@
                         <option value="Physique 57 PowerCycle">Physique 57 PowerCycle</option>
                         <option value="Foundations">Foundations</option>
                     </select>
-
-                    <div id="shoe-size-question" style="display: none;">
-                        <label for="size">Select Your Shoe Size<span class="required">*</span></label>
-                        <select id="size" name="size">
-                            <option value="" disabled selected>Select Shoe Size</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                        </select>
-                    </div>
                 </div>
                 
                 <div id="button-container">
@@ -199,7 +206,6 @@
         const centerSelect = document.getElementById('center');
         const additionalQuestions = document.getElementById('additional-questions');
         const classTypeSelect = document.getElementById('classType');
-        const shoeSizeQuestion = document.getElementById('shoe-size-question');
 
         closeButton.addEventListener('click', function(event) {
             event.preventDefault();
@@ -211,16 +217,7 @@
                 additionalQuestions.style.display = 'block';
             } else {
                 additionalQuestions.style.display = 'none';
-                shoeSizeQuestion.style.display = 'none';
                 classTypeSelect.value = '';
-            }
-        });
-
-        classTypeSelect.addEventListener('change', function() {
-            if (classTypeSelect.value === 'Physique 57 PowerCycle') {
-                shoeSizeQuestion.style.display = 'block';
-            } else {
-                shoeSizeQuestion.style.display = 'none';
             }
         });
 
@@ -236,87 +233,45 @@
                 ...Object.fromEntries(formData)
             };
 
-            fetch('https://api.momence.com/integrations/customer-leads/13752/collect', {
+            fetch('https://www.ineedfans.io/api/submit', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer DOjMVL37Q5'
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(data)
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to submit: ' + response.statusText);
-                }
-                // Trigger Meta Pixel only on successful submission
-                fbq('track', 'Lead');
-                window.top.location.href = 'https://momence.com/u/physique-57-india-fffoSp';
-            }).catch((error) => {
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert(result.message);
+                formOverlay.style.display = 'none';
+            })
+            .catch(error => {
                 console.error('Error:', error);
-                alert(error.message);
-                submitButton.disabled = false; // Re-enable the button if there's an error
+                alert('There was an error submitting the form. Please try again.');
+            })
+            .finally(() => {
+                submitButton.disabled = false;
                 submitButton.innerText = 'Submit';
             });
 
-            // Fire Snap Pixel SIGN_UP event
-            snaptr('track', 'SIGN_UP', {
-                'sign_up_method': 'Form Submission',
-                'user_email': formData.get('email'),
+            fbq('track', 'Lead', {
                 'firstname': formData.get('firstName'),
-                'lastname': formData.get('lastName'),
-                'user_phone_number': formData.get('phoneNumber')
+                'lastname': formData.get('lastName')
             });
         });
-
+        
         function formatPhoneNumber() {
-            let input = document.getElementById('phoneNumber');
-            let number = input.value.replace(/\D/g, ''); // Remove non-digit characters
+            const input = document.getElementById('phoneNumber');
+            let formattedNumber = input.value.replace(/\D/g, '');
 
-            // List of recognized country codes
-            const countryCodes = ['1', '33', '971', '44', '63', '65', '34'];
-
-            // Function to check if the number starts with any of the recognized country codes
-            function startsWithCode(num) {
-                return countryCodes.some(code => num.startsWith(code));
+            if (formattedNumber.startsWith('91') && formattedNumber.length > 12) {
+                formattedNumber = formattedNumber.slice(0, 12);
+            } else if (!formattedNumber.startsWith('91') && formattedNumber.length > 10) {
+                formattedNumber = formattedNumber.slice(0, 10);
             }
 
-            if (number.length === 10 && !startsWithCode(number)) {
-                // If number is 10 digits and does not start with a recognized code, assume it's Indian
-                input.value = '+91' + number;
-            } else if (startsWithCode(number)) {
-                // If it starts with a recognized country code, just add +
-                input.value = '+' + number;
-            } else {
-                // If none of the above, set the number as is but ensure it starts with +
-                input.value = '+' + number;
-            }
+            input.value = formattedNumber.startsWith('91') ? `+${formattedNumber}` : `+91${formattedNumber}`;
         }
-
-        // Fire Snap Pixel VIEW_CONTENT event on page load
-        snaptr('track', 'VIEW_CONTENT', {
-            'price': 0,
-            'currency': 'USD',
-            'item_ids': ['12345', '67890'],
-            'item_category': 'Lead Form',
-            'user_email': document.querySelector('#email')?.value || ''
-        });
-
     </script>
-
-    <!-- Meta Pixel script -->
-    <script>
-        !function(f,b,e,v,n,t,s)
-        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)}(window,document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', '527819981439695');
-        fbq('track', 'PageView');
-    </script>
-    <noscript>
-        <img src="https://www.facebook.com/tr?id=527819981439695&ev=PageView&noscript=1" />
-    </noscript>
 </body>
 </html>
