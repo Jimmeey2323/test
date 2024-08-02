@@ -108,9 +108,6 @@
       .required {
         color: red;
       }
-      #class-type-container {
-            display: none;
-        }
     </style>
 
     <!-- Snap Pixel Code -->
@@ -122,7 +119,7 @@
     u.parentNode.insertBefore(r,u);})(window,document,
     'https://sc-static.net/scevent.min.js');
 
-    snaptr('init', '5217a3a7-5f50-4c98-803c-a73c9f05737e', {
+    snaptr('init', '', {
     'user_email': '__INSERT_USER_EMAIL__'
     });
 
@@ -159,21 +156,21 @@
                     </select>
                 
                 <label for="center">Select a Studio Location<span class="required">*</span></label>
-                    <select id="center" name="center" required onchange="toggleClassType()">
+                    <select id="center" name="center" required>
                         <option value="" disabled selected>Select Preferred Studio Location</option>
                         <option value="Supreme Headquarters, Bandra">Supreme Headquarters, Bandra</option>
                         <option value="Kwality House, Kemps Corner">Kwality House, Kemps Corner</option>
                     </select>
                 
-                <div id="class-type-container">
-                    <label for="classType">Select a Class Type <span class="required">*</span></label>
-                    <select id="classType" name="classType" required>
+                <div id="classTypeContainer" style="display: none;">
+                    <label for="classType">Select a class type <span class="required">*</span></label>
+                    <select id="classType" name="classType">
                         <option value="" disabled selected>Select Class Type</option>
                         <option value="Barre 57">Barre 57</option>
-                        <option value="PowerCycle">PowerCycle</option>
+                        <option value="powerCycle">powerCycle</option>
                     </select>
                 </div>
-                
+
                 <div id="button-container">
                     <button id="close-button" class="close">Close</button>    
                     <button type="submit" class="submit">Submit</button>
@@ -186,10 +183,23 @@
         const formOverlay = document.getElementById('form-overlay');
         const closeButton = document.getElementById('close-button');
         const submitButton = document.querySelector('button[type=submit]');
+        const centerSelect = document.getElementById('center');
+        const classTypeContainer = document.getElementById('classTypeContainer');
+        const classTypeSelect = document.getElementById('classType');
 
         closeButton.addEventListener('click', function(event) {
             event.preventDefault();
             formOverlay.style.display = 'none';
+        });
+
+        centerSelect.addEventListener('change', function() {
+            if (centerSelect.value === 'Supreme Headquarters, Bandra') {
+                classTypeContainer.style.display = 'block';
+                classTypeSelect.setAttribute('required', 'required');
+            } else {
+                classTypeContainer.style.display = 'none';
+                classTypeSelect.removeAttribute('required');
+            }
         });
 
         document.getElementById('lead-form').addEventListener('submit', function(event) {
@@ -259,42 +269,32 @@
             }
         }
 
-        // Fire VIEW_CONTENT pixel when the form page is loaded
+        // Fire Snap Pixel VIEW_CONTENT event on page load
         snaptr('track', 'VIEW_CONTENT', {
-            'price': 'INSERT_PRICE',
-            'currency': 'INSERT_CURRENCY',
-            'item_ids': ['INSERT_ITEM_ID_1', 'INSERT_ITEM_ID_2'],
-            'item_category': 'INSERT_ITEM_CATEGORY',
-            'user_email': '__INSERT_USER_EMAIL__',
-            'user_phone_number': '__INSERT_USER_PHONE_NUMBER__',
-            'user_hashed_email': '__INSERT_USER_HASHED_EMAIL__',
-            'user_hashed_phone_number': '__INSERT_USER_HASHED_PHONE_NUMBER__',
-            'firstname': 'INSERT_FIRST_NAME',
-            'lastname': 'INSERT_LAST_NAME',
-            'age': 'INSERT_AGE',
-            'geo_city': 'INSERT_GEO_CITY',
-            'geo_country': 'INSERT_GEO_COUNTRY',
-            'geo_postal_code': 'INSERT_GEO_POSTAL_CODE',
-            'geo_region': 'INSERT_GEO_REGION'
+            'price': 0,
+            'currency': 'USD',
+            'item_ids': ['12345', '67890'],
+            'item_category': 'Lead Form',
+            'user_email': document.querySelector('#email')?.value || ''
         });
+
     </script>
 
-        function toggleClassType() {
-            const center = document.getElementById('center').value;
-            const classTypeContainer = document.getElementById('class-type-container');
-
-            if (center === 'Supreme Headquarters, Bandra') {
-                classTypeContainer.style.display = 'block';
-                document.getElementById('classType').required = true;
-            } else {
-                classTypeContainer.style.display = 'none';
-                document.getElementById('classType').required = false;
-            }
-        }
-
-        window.addEventListener('DOMContentLoaded', function() {
-            toggleClassType(); // Initialize the state based on the current selection
-        });
+    <!-- Meta Pixel script -->
+    <script>
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window,document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '527819981439695');
+        fbq('track', 'PageView');
     </script>
+    <noscript>
+        <img src="https://www.facebook.com/tr?id=527819981439695&ev=PageView&noscript=1" />
+    </noscript>
 </body>
 </html>
