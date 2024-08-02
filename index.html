@@ -108,6 +108,9 @@
       .required {
         color: red;
       }
+      #class-type-container {
+            display: none;
+        }
     </style>
 
     <!-- Snap Pixel Code -->
@@ -119,32 +122,13 @@
     u.parentNode.insertBefore(r,u);})(window,document,
     'https://sc-static.net/scevent.min.js');
 
-    snaptr('init', '', {
+    snaptr('init', '5217a3a7-5f50-4c98-803c-a73c9f05737e', {
     'user_email': '__INSERT_USER_EMAIL__'
     });
 
     snaptr('track', 'PAGE_VIEW');
     </script>
     <!-- End Snap Pixel Code -->
-    
-    <!-- Meta Pixel Code -->
-    <script>
-        !function(f,b,e,v,n,t,s)
-        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)}(window,document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', 'YOUR_PIXEL_ID');
-        fbq('track', 'PageView');
-    </script>
-    <noscript><img height="1" width="1" style="display:none"
-        src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1"
-    /></noscript>
-    <!-- End Meta Pixel Code -->
-
 </head>
 <body>
     <div class="form-overlay" id="form-overlay">
@@ -175,15 +159,15 @@
                     </select>
                 
                 <label for="center">Select a Studio Location<span class="required">*</span></label>
-                    <select id="center" name="center" required>
+                    <select id="center" name="center" required onchange="toggleClassType()">
                         <option value="" disabled selected>Select Preferred Studio Location</option>
                         <option value="Supreme Headquarters, Bandra">Supreme Headquarters, Bandra</option>
                         <option value="Kwality House, Kemps Corner">Kwality House, Kemps Corner</option>
                     </select>
-
-                <div id="additional-questions" style="display: none;">
-                    <label for="type">Select a Class Type<span class="required">*</span></label>
-                    <select id="type" name="type" required>
+                
+                <div id="class-type-container">
+                    <label for="classType">Select a Class Type <span class="required">*</span></label>
+                    <select id="classType" name="classType" required>
                         <option value="" disabled selected>Select Class Type</option>
                         <option value="Barre 57">Barre 57</option>
                         <option value="PowerCycle">PowerCycle</option>
@@ -202,22 +186,10 @@
         const formOverlay = document.getElementById('form-overlay');
         const closeButton = document.getElementById('close-button');
         const submitButton = document.querySelector('button[type=submit]');
-        const centerSelect = document.getElementById('center');
-        const additionalQuestions = document.getElementById('additional-questions');
-        const classTypeSelect = document.getElementById('classType');
 
         closeButton.addEventListener('click', function(event) {
             event.preventDefault();
             formOverlay.style.display = 'none';
-        });
-
-        centerSelect.addEventListener('change', function() {
-            if (centerSelect.value === 'Supreme Headquarters, Bandra') {
-                additionalQuestions.style.display = 'block';
-            } else {
-                additionalQuestions.style.display = 'none';
-                classTypeSelect.value = '';
-            }
         });
 
         document.getElementById('lead-form').addEventListener('submit', function(event) {
@@ -232,45 +204,62 @@
                 ...Object.fromEntries(formData)
             };
 
-            fetch('https://www.ineedfans.io/api/submit', {
+            fetch('https://api.momence.com/integrations/customer-leads/13752/collect', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer DOjMVL37Q5'
                 },
                 body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                alert(result.message);
-                formOverlay.style.display = 'none';
-            })
-            .catch(error => {
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to submit: ' + response.statusText);
+                }
+                // Trigger Meta Pixel only on successful submission
+                fbq('track', 'Lead');
+                window.top.location.href = 'https://momence.com/u/physique-57-india-fffoSp';
+            }).catch((error) => {
                 console.error('Error:', error);
-                alert('There was an error submitting the form. Please try again.');
-            })
-            .finally(() => {
-                submitButton.disabled = false;
+                alert(error.message);
+                submitButton.disabled = false; // Re-enable the button if there's an error
                 submitButton.innerText = 'Submit';
             });
 
-            fbq('track', 'Lead', {
+            // Fire Snap Pixel SIGN_UP event
+            snaptr('track', 'SIGN_UP', {
+                'sign_up_method': 'Form Submission',
+                'user_email': formData.get('email'),
                 'firstname': formData.get('firstName'),
-                'lastname': formData.get('lastName')
+                'lastname': formData.get('lastName'),
+                'user_phone_number': formData.get('phoneNumber')
             });
         });
-        
+
         function formatPhoneNumber() {
-            const input = document.getElementById('phoneNumber');
-            let formattedNumber = input.value.replace(/\D/g, '');
-
-            if (formattedNumber.startsWith('91') && formattedNumber.length > 12) {
-                formattedNumber = formattedNumber.slice(0, 12);
-            } else if (!formattedNumber.startsWith('91') && formattedNumber.length > 10) {
-                formattedNumber = formattedNumber.slice(0, 10);
+            let input = document.getElementById('phoneNumber');
+            let number = input.value.replace(/\D/g, '');
+            if (!number.startsWith('+91')) {
+                number = '+91' + number;
             }
-
-            input.value = formattedNumber.startsWith('91') ? `+${formattedNumber}` : `+91${formattedNumber}`;
+            input.value = number;
         }
+
+        function toggleClassType() {
+            const center = document.getElementById('center').value;
+            const classTypeContainer = document.getElementById('class-type-container');
+
+            if (center === 'Supreme Headquarters, Bandra') {
+                classTypeContainer.style.display = 'block';
+                document.getElementById('classType').required = true;
+            } else {
+                classTypeContainer.style.display = 'none';
+                document.getElementById('classType').required = false;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            toggleClassType(); // Initialize the state based on the current selection
+        });
     </script>
 </body>
 </html>
