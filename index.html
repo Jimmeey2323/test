@@ -237,12 +237,47 @@
 
         function formatPhoneNumber() {
             let input = document.getElementById('phoneNumber');
-            let number = input.value.replace(/\D/g, '');
-            if (!number.startsWith('+91')) {
-                number = '+91' + number;
+            let number = input.value.replace(/\D/g, ''); // Remove non-digit characters
+
+            // List of recognized country codes
+            const countryCodes = ['1', '33', '971', '44', '63', '65', '34'];
+
+            // Function to check if the number starts with any of the recognized country codes
+            function startsWithCode(num) {
+                return countryCodes.some(code => num.startsWith(code));
             }
-            input.value = number;
+
+            if (number.length === 10 && !startsWithCode(number)) {
+                // If number is 10 digits and does not start with a recognized code, assume it's Indian
+                input.value = '+91' + number;
+            } else if (startsWithCode(number)) {
+                // If it starts with a recognized country code, just add +
+                input.value = '+' + number;
+            } else {
+                // If none of the above, set the number as is but ensure it starts with +
+                input.value = '+' + number;
+            }
         }
+
+        // Fire VIEW_CONTENT pixel when the form page is loaded
+        snaptr('track', 'VIEW_CONTENT', {
+            'price': 'INSERT_PRICE',
+            'currency': 'INSERT_CURRENCY',
+            'item_ids': ['INSERT_ITEM_ID_1', 'INSERT_ITEM_ID_2'],
+            'item_category': 'INSERT_ITEM_CATEGORY',
+            'user_email': '__INSERT_USER_EMAIL__',
+            'user_phone_number': '__INSERT_USER_PHONE_NUMBER__',
+            'user_hashed_email': '__INSERT_USER_HASHED_EMAIL__',
+            'user_hashed_phone_number': '__INSERT_USER_HASHED_PHONE_NUMBER__',
+            'firstname': 'INSERT_FIRST_NAME',
+            'lastname': 'INSERT_LAST_NAME',
+            'age': 'INSERT_AGE',
+            'geo_city': 'INSERT_GEO_CITY',
+            'geo_country': 'INSERT_GEO_COUNTRY',
+            'geo_postal_code': 'INSERT_GEO_POSTAL_CODE',
+            'geo_region': 'INSERT_GEO_REGION'
+        });
+    </script>
 
         function toggleClassType() {
             const center = document.getElementById('center').value;
