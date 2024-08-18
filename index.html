@@ -245,49 +245,55 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }
 
         document.getElementById('lead-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            submitButton.disabled = true;
-            submitButton.innerText = 'Submitting...';
+    event.preventDefault();
+    submitButton.disabled = true;
+    submitButton.innerText = 'Submitting...';
 
-            const formData = new FormData(this);
-            const utmParams = getUTMParameters();
-            const data = {
-                token: "DOjMVL37Q5",
-                sourceId: "8082",
-                ...Object.fromEntries(formData),
-                ...utmParams
-            };
+    // Track form submission event with Google Analytics
+    gtag('event', 'form_submission', {
+        'event_category': 'Form',
+        'event_label': 'Lead Form Submitted'
+    });
 
-            fetch('https://api.momence.com/integrations/customer-leads/13752/collect', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer DOjMVL37Q5'
-                },
-                body: JSON.stringify(data)
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to submit: ' + response.statusText);
-                }
-                // Trigger Meta Pixel only on successful submission
-                fbq('track', 'Lead');
-                window.top.location.href = 'https://momence.com/u/physique-57-india-fffoSp';
-            }).catch((error) => {
-                console.error('Error:', error);
-                alert(error.message);
-                submitButton.disabled = false; // Re-enable the button if there's an error
-                submitButton.innerText = 'Submit';
-            });
+    // Collect form data
+    const formData = new FormData(this);
+    const data = {
+        token: "DOjMVL37Q5",
+        sourceId: "8082",
+        ...Object.fromEntries(formData)
+    };
 
-            // Fire Snap Pixel SIGN_UP event
-            snaptr('track', 'SIGN_UP', {
-                'sign_up_method': 'Form Submission',
-                'user_email': formData.get('email'),
-                'firstname': formData.get('firstName'),
-                'lastname': formData.get('lastName'),
-                'user_phone_number': formData.get('phoneNumber')
-            });
-        });
+    fetch('https://api.momence.com/integrations/customer-leads/13752/collect', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer DOjMVL37Q5'
+        },
+        body: JSON.stringify(data)
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to submit: ' + response.statusText);
+        }
+        // Trigger Meta Pixel only on successful submission
+        fbq('track', 'Lead');
+        window.top.location.href = 'https://momence.com/u/physique-57-india-fffoSp';
+    }).catch((error) => {
+        console.error('Error:', error);
+        alert(error.message);
+        submitButton.disabled = false; // Re-enable the button if there's an error
+        submitButton.innerText = 'Submit';
+    });
+
+    // Fire Snap Pixel SIGN_UP event
+    snaptr('track', 'SIGN_UP', {
+        'sign_up_method': 'Form Submission',
+        'user_email': formData.get('email'),
+        'firstname': formData.get('firstName'),
+        'lastname': formData.get('lastName'),
+        'user_phone_number': formData.get('phoneNumber')
+    });
+});
+
 
         function formatPhoneNumber() {
             let input = document.getElementById('phoneNumber');
