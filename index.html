@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-WHBZMFXL');</script>
+<!-- End Google Tag Manager -->
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book a Trial</title>
@@ -110,7 +118,7 @@
       }
     </style>
 
-    <!-- Snap Pixel Code -->
+        <!-- Snap Pixel Code -->
     <script type='text/javascript'>
     (function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function()
     {a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};
@@ -126,8 +134,31 @@
     snaptr('track', 'PAGE_VIEW');
     </script>
     <!-- End Snap Pixel Code -->
+
+    <!-- Meta Pixel script -->
+    <script>
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window,document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '527819981439695');
+        fbq('track', 'PageView');
+    </script>
+    <noscript>
+        <img src="https://www.facebook.com/tr?id=527819981439695&ev=PageView&noscript=1" />
+    </noscript>
+
 </head>
 <body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WHBZMFXL"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
     <div class="form-overlay" id="form-overlay">
         <div class="form-container">
             <form id="lead-form">
@@ -163,8 +194,8 @@
                     </select>
                 
                 <div id="classTypeContainer" style="display: none;">
-                    <label for="classType">Select a class type <span class="required">*</span></label>
-                    <select id="classType" name="classType">
+                    <label for="type">Select a class type <span class="required">*</span></label>
+                    <select id="type" name="type">
                         <option value="" disabled selected>Select Class Type</option>
                         <option value="Barre 57">Barre 57</option>
                         <option value="powerCycle">powerCycle</option>
@@ -185,7 +216,7 @@
         const submitButton = document.querySelector('button[type=submit]');
         const centerSelect = document.getElementById('center');
         const classTypeContainer = document.getElementById('classTypeContainer');
-        const classTypeSelect = document.getElementById('classType');
+        const classTypeSelect = document.getElementById('type');
 
         closeButton.addEventListener('click', function(event) {
             event.preventDefault();
@@ -202,16 +233,29 @@
             }
         });
 
+        function getUTMParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const utmParams = {};
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(param => {
+                if (urlParams.has(param)) {
+                    utmParams[param] = urlParams.get(param);
+                }
+            });
+            return utmParams;
+        }
+
         document.getElementById('lead-form').addEventListener('submit', function(event) {
             event.preventDefault();
             submitButton.disabled = true;
             submitButton.innerText = 'Submitting...';
 
             const formData = new FormData(this);
+            const utmParams = getUTMParameters();
             const data = {
                 token: "DOjMVL37Q5",
                 sourceId: "8082",
-                ...Object.fromEntries(formData)
+                ...Object.fromEntries(formData),
+                ...utmParams
             };
 
             fetch('https://api.momence.com/integrations/customer-leads/13752/collect', {
@@ -271,12 +315,23 @@
 
         // Fire Snap Pixel VIEW_CONTENT event on page load
         snaptr('track', 'VIEW_CONTENT', {
-            'price': 0,
-            'currency': 'USD',
-            'item_ids': ['12345', '67890'],
-            'item_category': 'Lead Form',
-            'user_email': document.querySelector('#email')?.value || ''
-        });
+        'price': 'INSERT_PRICE',
+        'currency': 'INSERT_CURRENCY',
+        'item_ids': ['INSERT_ITEM_ID_1', 'INSERT_ITEM_ID_2'],
+        'item_category': 'INSERT_ITEM_CATEGORY',
+        'user_email': '__INSERT_USER_EMAIL__',
+        'user_phone_number': '__INSERT_USER_PHONE_NUMBER__',
+        'user_hashed_email': '__INSERT_USER_HASHED_EMAIL__',
+        'user_hashed_phone_number': '__INSERT_USER_HASHED_PHONE_NUMBER__',
+        'firstname': 'INSERT_FIRST_NAME',
+        'lastname': 'INSERT_LAST_NAME',
+        'age': 'INSERT_AGE',
+        'geo_city': 'INSERT_GEO_CITY',
+        'geo_country': 'INSERT_GEO_COUNTRY',
+        'geo_postal_code': 'INSERT_GEO_POSTAL_CODE',
+        'geo_region': 'INSERT_GEO_REGION'
+    });
+
 
     </script>
 
