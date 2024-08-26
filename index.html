@@ -127,7 +127,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     u.parentNode.insertBefore(r,u);})(window,document,
     'https://sc-static.net/scevent.min.js');
 
-    snaptr('init', '', {
+    snaptr('init', '5217a3a7-5f50-4c98-803c-a73c9f05737e', {
     'user_email': '__INSERT_USER_EMAIL__'
     });
 
@@ -233,67 +233,48 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             }
         });
 
-        function getUTMParameters() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const utmParams = {};
-            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(param => {
-                if (urlParams.has(param)) {
-                    utmParams[param] = urlParams.get(param);
-                }
-            });
-            return utmParams;
-        }
-
         document.getElementById('lead-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-    submitButton.disabled = true;
-    submitButton.innerText = 'Submitting...';
+            event.preventDefault();
+            submitButton.disabled = true;
+            submitButton.innerText = 'Submitting...';
 
-    // Track form submission event with Google Analytics
-    gtag('event', 'form_submission', {
-        'event_category': 'Form',
-        'event_label': 'Lead Form Submitted'
-    });
+            const formData = new FormData(this);
+            const data = {
+                token: "DOjMVL37Q5",
+                sourceId: "8082",
+                ...Object.fromEntries(formData)
+            };
 
-    // Collect form data
-    const formData = new FormData(this);
-    const data = {
-        token: "DOjMVL37Q5",
-        sourceId: "8082",
-        ...Object.fromEntries(formData)
-    };
+            fetch('https://api.momence.com/integrations/customer-leads/13752/collect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer DOjMVL37Q5'
+                },
+                body: JSON.stringify(data)
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to submit: ' + response.statusText);
+                }
+                // Trigger Meta Pixel only on successful submission
+                fbq('track', 'Lead');
+                window.top.location.href = 'https://momence.com/u/physique-57-india-fffoSp';
+            }).catch((error) => {
+                console.error('Error:', error);
+                alert(error.message);
+                submitButton.disabled = false; // Re-enable the button if there's an error
+                submitButton.innerText = 'Submit';
+            });
 
-    fetch('https://api.momence.com/integrations/customer-leads/13752/collect', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer DOjMVL37Q5'
-        },
-        body: JSON.stringify(data)
-    }).then(response => {
-        if (!response.ok) {
-            throw new Error('Failed to submit: ' + response.statusText);
-        }
-        // Trigger Meta Pixel only on successful submission
-        fbq('track', 'Lead');
-        window.top.location.href = 'https://momence.com/u/physique-57-india-fffoSp';
-    }).catch((error) => {
-        console.error('Error:', error);
-        alert(error.message);
-        submitButton.disabled = false; // Re-enable the button if there's an error
-        submitButton.innerText = 'Submit';
-    });
-
-    // Fire Snap Pixel SIGN_UP event
-    snaptr('track', 'SIGN_UP', {
-        'sign_up_method': 'Form Submission',
-        'user_email': formData.get('email'),
-        'firstname': formData.get('firstName'),
-        'lastname': formData.get('lastName'),
-        'user_phone_number': formData.get('phoneNumber')
-    });
-});
-
+            // Fire Snap Pixel SIGN_UP event
+            snaptr('track', 'SIGN_UP', {
+                'sign_up_method': 'Form Submission',
+                'user_email': formData.get('email'),
+                'firstname': formData.get('firstName'),
+                'lastname': formData.get('lastName'),
+                'user_phone_number': formData.get('phoneNumber')
+            });
+        });
 
         function formatPhoneNumber() {
             let input = document.getElementById('phoneNumber');
@@ -341,21 +322,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     </script>
 
-    <!-- Meta Pixel script -->
-    <script>
-        !function(f,b,e,v,n,t,s)
-        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)}(window,document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', '527819981439695');
-        fbq('track', 'PageView');
-    </script>
-    <noscript>
-        <img src="https://www.facebook.com/tr?id=527819981439695&ev=PageView&noscript=1" />
-    </noscript>
+    <!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '476513465196983');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=476513465196983&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 </body>
 </html>
