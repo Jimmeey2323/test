@@ -1,6089 +1,792 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bootstrap DataTable Example</title>
-    
-    <!-- Bootstrap CSS and DataTables CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/v/bs5/jq-3.7.0/jszip-3.10.1/dt-2.1.8/af-2.7.0/b-3.1.2/b-colvis-3.1.2/b-html5-3.1.2/b-print-3.1.2/cr-2.0.4/date-1.5.4/fc-5.0.3/fh-4.0.1/kt-2.12.1/r-3.0.3/rg-1.5.0/rr-1.5.0/sc-2.4.3/sb-1.8.1/sp-2.3.3/sl-2.1.0/sr-1.4.1/datatables.min.css" rel="stylesheet">
+    <title>Sales Analysis</title>
+    <style>
+        /* General Reset and Base Styling */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            background-color: #f5f7fa;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background: linear-gradient(to bottom, #004080, #0099ff);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: fixed;
+            transition: transform 0.3s ease;
+        }
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+        .sidebar h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar nav a {
+            padding: 15px;
+            margin: 5px 0;
+            text-decoration: none;
+            color: white;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        .sidebar nav a:hover, .sidebar nav a.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Main Content Area */
+        .content {
+            margin-left: 240px;
+            padding: 20px;
+            flex: 1;
+            overflow: auto;
+            transition: margin-left 0.3s ease;
+        }
+        .content.full-width {
+            margin-left: 0;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e2e2;
+            margin-bottom: 20px;
+        }
+
+        /* Dropdown Styling */
+        #locationSelect {
+            font-size: 16px;
+            padding: 10px;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            border: 1px solid #0099ff;
+            border-radius: 6px;
+            transition: border-color 0.3s;
+        }
+        #locationSelect:hover {
+            border-color: #004080;
+        }
+
+        /* Scorecard Styling */
+        .scorecards {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .scorecard {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            text-align: center;
+            flex: 1 1 200px;
+            color: #333;
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+        .scorecard:hover {
+            transform: translateY(-4px);
+        }
+        .scorecard h2 {
+            font-size: 16px;
+            color: #555;
+        }
+        .scorecard p {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+            height: 40px; /* Fixed height for uniformity */
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Table Styling */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background-color: white;
+            padding: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        th, td {
+            padding: 15px; /* Increased padding for better spacing */
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            white-space: nowrap;
+            transition: background 0.2s ease-in-out;
+        }
+        th {
+            background: linear-gradient(to right, #0066cc, #0066cc);
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        th:first-child, td:first-child {
+            background-color: #f1f1f1;
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            min-width: 300px;
+            font-weight: bold;
+            padding-left: 15px;
+            box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+            border-right: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f1f8ff; /* Hover effect for rows */
+        }
+        td {
+            font-size: 14px; /* Adjust font size for readability */
+        }
+
+        /* Loader Styling */
+        .loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .loader .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Chart Container */
+        .charts-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .chart {
+            width: 48%;
+            padding: 15px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        /* Toggle Sidebar Icon */
+        .toggle-sidebar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: transparent;
+            color: #0066cc;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 1100;
+            font-size: 24px;
+        }
+
+        /* Tooltip styling */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+            max-width: 300px;
+            word-wrap: break-word;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Button Styling */
+        #reloadBtn {
+            padding: 8px 16px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #004080;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        #reloadBtn:hover {
+            background-color: #004080;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function openTab(tabName) {
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+            
+            // Show the selected tab
+            const selectedTab = document.getElementById(tabName);
+            if (selectedTab) {
+                selectedTab.style.display = 'block';
+            } else {
+                console.error(`Tab with ID ${tabName} not found.`);
+            }
+        }
+
+        function displaySalesData() {
+            const location = document.getElementById("locationSelect").value;
+            const buttonClicked = document.querySelector('input[name="dataType"]:checked').value;
+            const tableBody = document.getElementById("salesTableBody");
+            tableBody.innerHTML = ""; // Clear previous data
+
+            let data = [];
+
+                        if (location === "Kwality House, Kemps Corner") {
+                if (buttonClicked === "units") {
+                    data = [
+                        ["Studio 2 Week Unlimited",1,1,3,8,6,4,2,4,2,6,37,"-"  ],
+                        ["Studio 3 Month Unlimited Membership",0,16,6,3,6,4,7,2,4,4,52,"-"  ],
+                        ["Studio 6 Month Unlimited Membership",0,2,0,0,3,2,8,3,1,0,19,"-"  ],
+                        ["Studio Annual Unlimited Membership",0,1,0,0,0,0,1,0,0,1,3,"-"  ],
+                        ["Studio Newcomers 2 Week Unlimited Membership",0,0,0,0,0,0,0,1,0,0,1,"-"  ],
+                        ["Studio 10 Single Class Pack",2,6,5,0,1,1,1,0,0,0,16,"-"  ],
+                        ["Studio 12 Class Package",1,19,8,6,13,10,18,7,7,5,94,"-"  ],
+                        ["Studio 20 Single Class Pack",1,5,1,1,0,2,1,1,4,3,19,"-"  ],
+                        ["Studio 30 Single Class Pack",0,5,0,0,0,1,2,1,0,2,11,"-"  ],
+                        ["Studio 4 Class Package",1,7,18,15,3,11,9,9,8,11,92,"-"  ],
+                        ["Studio 8 Class Package",4,15,16,22,7,11,18,13,12,13,131,"-"  ],
+                        ["V'Day Special: Shared Studio 8 Class Package ",0,0,0,0,0,0,0,0,0,0,0,"-"  ],
+                        ["Single Class",44,31,30,17,33,31,18,26,15,6,251,"25"  ],
+                        ["Private Sessions",3,7,9,4,1,4,27,17,17,14,103,"10"  ],
+                        ["Boutique",24,33,41,53,41,46,79,64,67,78,526,"53"  ],
+                        ["Newcomers 2 For 1 ",1,1,9,0,0,0,0,0,0,0,11,"-"  ],
+                        ["Studio Open Barre Class",0,0,0,0,0,0,0,0,0,0,0,"-"  ]
+                    ];
+                } else if (buttonClicked === "value") {
+                    data = 
+                        [
+                          ["Studio 2 Week Unlimited","₹ 9027","₹ 9027","₹ 27081","₹ 72216","₹ 54162","₹ 36108","₹ 18054","₹ 36108","₹ 18054","₹ 54162","₹ 333999","-"  ],
+                          ["Studio 3 Month Unlimited Membership","₹ 0","₹ 702234","₹ 260411","₹ 138724","₹ 260411","₹ 163061","₹ 290363","₹ 90049","₹ 194700","₹ 154008","₹ 2253960","-"  ],
+                          ["Studio 6 Month Unlimited Membership","₹ 0","₹ 162486","₹ 0","₹ 0","₹ 248508","₹ 152928","₹ 617022","₹ 253287","₹ 75000","₹ 0","₹ 1509231","-"  ],
+                          ["Studio Annual Unlimited Membership","₹ 0","₹ 140715","₹ 0","₹ 0","₹ 0","₹ 0","₹ 150096","₹ 0","₹ 0","₹ 150096","₹ 440907","-"  ],
+                          ["Studio Newcomers 2 Week Unlimited Membership","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 7670","₹ 0","₹ 0","₹ 7670","-"  ],
+                          ["Studio 10 Single Class Pack","₹ 31388","₹ 90860","₹ 74340","₹ 0","₹ 14868","₹ 14868","₹ 16520","₹ 0","₹ 0","₹ 0","₹ 242844","-"  ],
+                          ["Studio 12 Class Package","₹ 16343","₹ 281917","₹ 130744","₹ 93155","₹ 197750","₹ 153624","₹ 271294","₹ 107047","₹ 114401","₹ 81715","₹ 1447990","-"  ],
+                          ["Studio 20 Single Class Pack","₹ 29736","₹ 143724","₹ 29736","₹ 33040","₹ 0","₹ 59472","₹ 29736","₹ 29736","₹ 115640","₹ 92512","₹ 563332","-"  ],
+                          ["Studio 30 Single Class Pack","₹ 0","₹ 220542","₹ 0","₹ 0","₹ 0","₹ 44604","₹ 82364","₹ 44604","₹ 0","₹ 89208","₹ 481322","-"  ],
+                          ["Studio 4 Class Package","₹ 5841","₹ 40887","₹ 104665","₹ 87615","₹ 17523","₹ 64251","₹ 52569","₹ 52569","₹ 46728","₹ 64251","₹ 536899","-"  ],
+                          ["Studio 8 Class Package","₹ 44368","₹ 166380","₹ 175808","₹ 241806","₹ 77644","₹ 119017","₹ 195219","₹ 144196","₹ 133104","₹ 144196","₹ 1441738","-"  ],
+                          ["V'Day Special: Shared Studio 8 Class Package ","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","-"  ],
+                          ["Single Class","49997","51212","49558","29736","54516","51212","29736","42904","24450","9912","393232","39323"  ],
+                          ["Private Sessions","17700","85550","247800","224200","5900","129800","489110","241900","204140","378780","2024880","202488"  ],
+                          ["Boutique","8111","47002","26831","33214","14580","40971","33672","16448","22790","50962","294581","29458"  ],
+                          ["Newcomers 2 For 1 ","₹ 1652","₹ 1652","₹ 14868","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 18172","-"  ],
+                          ["Studio Open Barre Class","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","-"  ]
+                        ];
+                } else if (buttonClicked === "percentage") {
+                    data = 
+                        [
+                          ["Studio 2 Week Unlimited","2.6%","0.3%","1.7%","4.9%","4.1%","2.6%","0.6%","2.5%","1.3%","3.1%","2.0%","-"  ],
+                          ["Studio 3 Month Unlimited Membership","0.0%","26.4%","16.0%","9.4%","19.7%","11.9%","9.9%","6.1%","13.7%","8.8%","13.8%","-"  ],
+                          ["Studio 6 Month Unlimited Membership","0.0%","6.1%","0.0%","0.0%","18.8%","11.2%","20.9%","17.3%","5.3%","0.0%","9.2%","-"  ],
+                          ["Studio Annual Unlimited Membership","0.0%","5.3%","0.0%","0.0%","0.0%","0.0%","5.1%","0.0%","0.0%","8.6%","2.7%","-"  ],
+                          ["Studio Newcomers 2 Week Unlimited Membership","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.5%","0.0%","0.0%","0.0%","-"  ],
+                          ["Studio 10 Single Class Pack","9.0%","3.4%","4.6%","0.0%","1.1%","1.1%","0.6%","0.0%","0.0%","0.0%","1.5%","-"  ],
+                          ["Studio 12 Class Package","4.7%","10.6%","8.0%","6.3%","15.0%","11.2%","9.2%","7.3%","8.1%","4.7%","8.8%","-"  ],
+                          ["Studio 20 Single Class Pack","8.6%","5.4%","1.8%","2.2%","0.0%","4.3%","1.0%","2.0%","8.2%","5.3%","3.4%","-"  ],
+                          ["Studio 30 Single Class Pack","0.0%","8.3%","0.0%","0.0%","0.0%","3.3%","2.8%","3.0%","0.0%","5.1%","2.9%","-"  ],
+                          ["Studio 4 Class Package","1.7%","1.5%","6.4%","5.9%","1.3%","4.7%","1.8%","3.6%","3.3%","3.7%","3.3%","-"  ],
+                          ["Studio 8 Class Package","12.8%","6.2%","10.8%","16.3%","5.9%","8.7%","6.6%","9.8%","9.4%","8.3%","8.8%","-"  ],
+                          ["V'Day Special: Shared Studio 8 Class Package ","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","-"  ],
+                          ["Single Class","14.4%","1.9%","3.0%","2.0%","4.1%","3.7%","1.0%","2.9%","1.7%","0.6%","2.4%","-"  ],
+                          ["Private Sessions","5.1%","3.2%","15.2%","15.2%","0.4%","9.5%","16.6%","16.5%","14.4%","21.7%","12.4%","-"  ],
+                          ["Boutique","2.3%","1.8%","1.6%","2.2%","1.1%","3.0%","1.1%","1.1%","1.6%","2.9%","1.8%","-"  ],
+                          ["Newcomers 2 For 1 ","0.5%","0.1%","0.9%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.1%","-"  ],
+                          ["Studio Open Barre Class","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%","-"  ]
+                        ]                    ;
+                }
+            } else if (location === "Supreme HQ, Bandra") {
+                if (buttonClicked === "units") {
+                    data = 
+                        [
+                      ["Studio 2 Week Unlimited",1,4,6,2,3,0,0,0,0,0,16,"-"  ],
+                      ["Studio 3 Month Unlimited Membership",1,10,6,4,4,2,0,0,0,0,27,"-"  ],
+                      ["Studio 6 Month Unlimited Membership",0,3,0,0,0,1,0,0,0,0,4,"-"  ],
+                      ["Studio Annual Unlimited Membership",0,0,0,0,0,0,0,0,0,0,0,"-"  ],
+                      ["Studio Newcomers 2 Week Unlimited Membership",0,1,0,2,1,8,0,0,0,0,12,"-"  ],
+                      ["Studio 10 Single Class Pack",5,26,9,3,15,0,0,0,0,0,58,"-"  ],
+                      ["Studio 12 Class Package",2,9,7,8,22,15,0,0,0,0,63,"-"  ],
+                      ["Studio 20 Single Class Pack",0,4,1,1,0,0,0,0,0,0,6,"-"  ],
+                      ["Studio 30 Single Class Pack",0,0,0,0,0,0,0,0,0,0,0,"-"  ],
+                      ["Studio 4 Class Package",4,5,9,5,9,3,0,0,0,0,35,"-"  ],
+                      ["Studio 8 Class Package",2,12,16,4,6,16,0,0,0,0,56,"-"  ],
+                      ["V'Day Special: Shared Studio 8 Class Package ",0,0,0,0,0,0,0,0,0,0,0,"-"  ],
+                      ["Single Class",56,23,13,5,1,0,0,0,0,0,98,"10"  ],
+                      ["Private Sessions",0,0,0,0,0,1,0,0,0,0,1,"0"  ],
+                      ["Boutique",22,59,54,36,27,51,0,0,0,0,249,"25"  ],
+                      ["Newcomers 2 For 1 ",17,42,49,0,0,0,0,0,0,0,108,"-"  ],
+                      ["Studio Open Barre Class",0,0,0,0,0,0,0,0,0,0,0,"-"  ]
+                    ]                    ;
+                } else if (buttonClicked === "value") {
+                    data = 
+                        [
+                          ["Studio 2 Week Unlimited","₹ 9027","₹ 36108","₹ 54162","₹ 18054","₹ 27081","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 144432","-"  ],
+                          ["Studio 3 Month Unlimited Membership","₹ 48675","₹ 423473","₹ 260411","₹ 167929","₹ 170363","₹ 85181","₹ 0","₹ 0","₹ 0","₹ 0","₹ 1156031","-"  ],
+                          ["Studio 6 Month Unlimited Membership","₹ 0","₹ 248508","₹ 0","₹ 0","₹ 0","₹ 86022","₹ 0","₹ 0","₹ 0","₹ 0","₹ 334530","-"  ],
+                          ["Studio Annual Unlimited Membership","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","-"  ],
+                          ["Studio Newcomers 2 Week Unlimited Membership","₹ 0","₹ 7670","₹ 0","₹ 15340","₹ 7670","₹ 61360","₹ 0","₹ 0","₹ 0","₹ 0","₹ 92040","-"  ],
+                          ["Studio 10 Single Class Pack","₹ 74340","₹ 386568","₹ 133812","₹ 44604","₹ 223020","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 862344","-"  ],
+                          ["Studio 12 Class Package","₹ 32686","₹ 137281","₹ 109988","₹ 118487","₹ 305614","₹ 217198","₹ 0","₹ 0","₹ 0","₹ 0","₹ 921255","-"  ],
+                          ["Studio 20 Single Class Pack","₹ 0","₹ 118944","₹ 29736","₹ 29736","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 178416","-"  ],
+                          ["Studio 30 Single Class Pack","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","-"  ],
+                          ["Studio 4 Class Package","₹ 22196","₹ 29205","₹ 52569","₹ 29205","₹ 52569","₹ 17523","₹ 0","₹ 0","₹ 0","₹ 0","₹ 203267","-"  ],
+                          ["Studio 8 Class Package","₹ 22184","₹ 126449","₹ 171926","₹ 44368","₹ 64112","₹ 159281","₹ 0","₹ 0","₹ 0","₹ 0","₹ 588320","-"  ],
+                          ["V'Day Special: Shared Studio 8 Class Package ","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","-"  ],
+                          ["Single Class","62698","39648","23128","9912","1652","0","0","0","0","0","137038","13704"  ],
+                          ["Private Sessions","0","0","0","0","0","5900","0","0","0","0","5900","590"  ],
+                          ["Boutique","20381","63237","44057","22582","16615","76737","0","0","0","0","243608","24361"  ],
+                          ["Newcomers 2 For 1 ","₹ 28084","₹ 69384","₹ 80948","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 178416","-"  ],
+                          ["Studio Open Barre Class","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","₹ 0","-"  ]
+                        ];
+                } else if (buttonClicked === "percentage") {
+                    data = 
+                        [
+                          ["Studio 2 Week Unlimited","2.3%","1.5%","4.1%","2.1%","2.1%","0.0%",0,0,0,0,"2.0%",0  ],
+                          ["Studio 3 Month Unlimited Membership","12.4%","17.7%","19.5%","19.5%","13.4%","9.8%",0,0,0,0,"16.2%",0  ],
+                          ["Studio 6 Month Unlimited Membership","0.0%","10.4%","0.0%","0.0%","0.0%","9.9%",0,0,0,0,"4.7%",0  ],
+                          ["Studio Annual Unlimited Membership","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%",0,0,0,0,"0.0%",0  ],
+                          ["Studio Newcomers 2 Week Unlimited Membership","0.0%","0.3%","0.0%","1.8%","0.6%","7.1%",0,0,0,0,"1.3%",0  ],
+                          ["Studio 10 Single Class Pack","18.9%","16.1%","10.0%","5.2%","17.5%","0.0%",0,0,0,0,"12.1%",0  ],
+                          ["Studio 12 Class Package","8.3%","5.7%","8.2%","13.8%","24.0%","25.1%",0,0,0,0,"12.9%",0  ],
+                          ["Studio 20 Single Class Pack","0.0%","5.0%","2.2%","3.5%","0.0%","0.0%",0,0,0,0,"2.5%",0  ],
+                          ["Studio 30 Single Class Pack","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%",0,0,0,0,"0.0%",0  ],
+                          ["Studio 4 Class Package","5.7%","1.2%","3.9%","3.4%","4.1%","2.0%",0,0,0,0,"2.9%",0  ],
+                          ["Studio 8 Class Package","5.7%","5.3%","12.9%","5.1%","5.0%","18.4%",0,0,0,0,"8.3%",0  ],
+                          ["V'Day Special: Shared Studio 8 Class Package ","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%",0,0,0,0,"0.0%",0  ],
+                          ["Single Class","16.0%","1.7%","1.7%","1.2%","0.1%","0.0%",0,0,0,0,"1.9%",0  ],
+                          ["Private Sessions","0.0%","0.0%","0.0%","0.0%","0.0%","0.7%",0,0,0,0,"0.1%",0  ],
+                          ["Boutique","5.2%","2.6%","3.3%","2.6%","1.3%","8.9%",0,0,0,0,"3.4%",0  ],
+                          ["Newcomers 2 For 1 ","7.2%","2.9%","6.1%","0.0%","0.0%","0.0%",0,0,0,0,"2.5%",0  ],
+                          ["Studio Open Barre Class","0.0%","0.0%","0.0%","0.0%","0.0%","0.0%",0,0,0,0,"0.0%",0  ]
+                        ]                    ;
+                }
+            }
+
+
+            data.forEach(row => {
+                const tableRow = document.createElement("tr");
+                row.forEach(cell => {
+                    const tableCell = document.createElement("td");
+                    tableCell.textContent = cell;
+                    tableRow.appendChild(tableCell);
+                });
+                tableBody.appendChild(tableRow);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const locationSelect = document.getElementById("locationSelect");
+            const dataTypeRadios = document.querySelectorAll('input[name="dataType"]');
+            const tableBody = document.getElementById("salesTableBody");
+
+            locationSelect.addEventListener("change", displaySalesData);
+            dataTypeRadios.forEach(radio => radio.addEventListener("change", displaySalesData));
+        });
+
+        // Fetch data from server
+        function fetchData() {
+            const location = document.getElementById("locationSelect").value;
+            google.script.run.withSuccessHandler(displayPerformanceData).getData(location);
+        }
+
+        function displayPerformanceData(data) {
+            // Hide loader
+            document.getElementById("loader").style.display = "none";
+            const table = document.getElementById("dataTable");
+            table.innerHTML = "";  // Clear table content
+
+            // Scorecards
+            updateScorecards(data);
+
+            // Table Header
+            const headerRow = document.createElement("tr");
+            ["Key Performance Indicator", "Oct-24", "Sep-24", "Aug-24", "Jul-24", "Jun-24", "May-24", "Apr-24", "Mar-24", "Feb-24", "Jan-24", "YTD", "Average"].forEach(header => {
+                const th = document.createElement("th");
+                th.innerText = header;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            // Table Body
+            data.forEach(row => {
+                const dataRow = document.createElement("tr");
+                row.forEach((cell, index) => {
+                    const cellElement = document.createElement(index === 0 ? "th" : "td");
+                    cellElement.innerText = formatCurrency(cell, index);
+                    if (index === 0) {
+                        addTooltip(cellElement, cell);
+                    }
+                    dataRow.appendChild(cellElement);
+                });
+                table.appendChild(dataRow);
+            });
+
+            // Initialize Charts
+            initCharts(data);
+        }
+
+        function updateScorecards(data) {
+            const scorecardsContainer = document .querySelector(".scorecards");
+            scorecardsContainer.innerHTML = "";
+
+            // Assuming the data is structured with the first column as the metric name
+            // and the subsequent columns as monthly data, with September being the 3rd column
+            data.forEach(row => {
+                const metricName = row[0];
+                const septValue = row[2]; // Assuming September is the 3rd column
+
+                const scorecard = document.createElement("div");
+                scorecard.classList.add("scorecard");
+                scorecard.innerHTML = `
+                    <h2>${metricName}</h2>
+                    <p class="counter" data-target="${septValue}">${septValue}</p>
+                `;
+                scorecardsContainer.appendChild(scorecard);
+                animateCounter(scorecard.querySelector(".counter"), septValue);
+            });
+        }
+
+        function animateCounter(element, value) {
+            const targetValue = parseFloat(value.replace(/[₹, L]/g, ""));
+            let currentValue = 0;
+            const increment = targetValue / 100;
+            const isCurrency = value.includes("₹");
+
+            const counter = setInterval(() => {
+                currentValue += increment;
+                if (currentValue >= targetValue) {
+                    currentValue = targetValue;
+                    clearInterval(counter);
+                }
+                element.innerText = isCurrency ? `₹ ${Math.floor(currentValue).toLocaleString()} L` : Math.floor(currentValue).toLocaleString();
+            }, 20);
+        }
+
+        function formatCurrency(value, index) {
+            if (value.includes("₹") && index > 0) {
+                const numberValue = parseFloat(value.replace(/[₹,]/g, ""));
+                return `₹ ${(numberValue / 100000).toFixed(2)} L`;
+            }
+            return value;
+        }
+
+        // Tooltip Adder
+        function addTooltip(element, metric) {
+            element.classList.add("tooltip");
+            const tooltipText = document.createElement("span");
+            tooltipText.className = "tooltiptext";
+            const tooltipContent = {
+                "Sales Revenue": "Net Revenue Including Taxes & Boutique Sales",
+                "Units Per Transaction (UPT)": "Average Units sold Per Transaction",
+                "Average Transactional Value (ATV)": "[Revenue/Tickets Sold]",
+                "Average Unit Value (AUV)": "[Revenue/Units Sold]",
+                "Unique Clients": "Unique client purchases",
+                "Average Spend": "[Revenue/Unique Clients]"
+            };
+            tooltipText.innerText = tooltipContent[metric] || "";
+            element.appendChild(tooltipText);
+        }
+
+        // Initialize Charts with Chart.js
+        function initCharts(data) {
+            const discountVsSalesCtx = document.getElementById("discountVsSalesChart").getContext("2d");
+            const atvVsAuvCtx = document.getElementById("atvVsAuvChart").getContext("2d");
+
+            new Chart(discountVsSalesCtx, {
+                type: "bar",
+                data: {
+                    labels: ["Oct-24", "Sep-24", "Aug-24", "Jul-24", "Jun-24", "May-24", "Apr-24", "Mar-24", "Feb-24", "Jan-24"],
+                    datasets: [
+                        { 
+                            label: "Discounts (₹ L)", 
+                            data: getDiscountData(data), 
+                            backgroundColor: "#eff1f2", 
+                            borderColor: "#e52020", 
+                            borderWidth: 1 
+                        },
+                        { 
+                            label: "Sales (₹ L)", 
+                            data: getSalesData(data), 
+                            backgroundColor: "#eff1f2", 
+                            borderColor: "#03ba00", 
+                            borderWidth: 1 
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: context => `${context.dataset.label}: ₹ ${context.raw}`
+                            }
+                        }
+                    }
+                }
+            });
+
+            new Chart(atvVsAuvCtx, {
+                type: "line",
+                data: {
+                    labels: ["Oct-24", "Sep-24", "Aug-24", "Jul-24", "Jun-24", "May-24", "Apr-24", "Mar-24", "Feb-24", "Jan-24"],
+                    datasets: [
+                        { 
+                            label: "ATV", 
+                            data: getATVData(data), 
+                            borderColor: "#e52020", 
+                            backgroundColor: "#eff1f2", 
+                            fill: false 
+                        },
+                        { 
+                            label: "AUV", 
+                            data: getAUVData(data), 
+                            borderColor: "#0071e2", 
+                            backgroundColor: "#eff1f2", 
+                            fill: false 
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: context => `${context.dataset.label}: ${context.raw}`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createBarChart(ctx, labels, salesData, discountData) {
+            new Chart(ctx, {
+                type: ' bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Sales (₹ L)', data: salesData, backgroundColor: '#03ba00' },
+                        { label: 'Discounts (₹ L)', data: discountData, backgroundColor: '#e52020' }
+                    ]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function createPieChart(ctx, labels, data) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function createLineChart(ctx, labels, atvData, auvData) {
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'ATV (₹)', data: atvData, borderColor: '#FFA500', backgroundColor: 'rgba(255, 165, 0, 0.3)', fill: true },
+                        { label: 'AUV (₹)', data: auvData, borderColor: '#00BFFF', backgroundColor: 'rgba(0, 191, 255, 0.3)', fill: true }
+                    ]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        // Sidebar toggle function
+        function toggleSidebar() {
+            const sidebar = document.querySelector(".sidebar");
+            const content = document.querySelector(".content");
+            sidebar.classList.toggle("hidden");
+            content.classList.toggle("full-width");
+        }
+
+        // Function to extract discount data from table data
+        function getDiscountData(data) {
+            // Assuming row 9 (index 8) contains the discount data
+            return data[8].slice(1, -2).map(value => parseFloat(value.replace(/[₹,]/g, "")) / 100000);
+        }
+
+        // Function to extract sales data from table data
+        function getSalesData(data) {
+            // Assuming row 1 (index 0) contains the sales data
+            return data[0].slice(1, -2).map(value => parseFloat(value.replace(/[₹,]/g, "")) / 100000);
+        }
+
+        // Function to extract ATV data from table data
+        function getATVData(data) {
+            // Assuming row 6 (index 5) contains the ATV data
+            return data[5].slice(1, -2).map(value => parseFloat(value));
+        }
+
+        // Function to extract AUV data from table data
+        function getAUVData(data) {
+            // Assuming row 5 (index 4) contains the AUV data
+            return data[4].slice(1, -2).map(value => parseFloat(value));
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById("loader").style.display = "flex";
+            fetchData();
+            document.getElementById("locationSelect").addEventListener("change", fetchData);
+            document.querySelector(".toggle-sidebar").addEventListener("click", toggleSidebar);
+            
+            // Open the default tab
+            openTab('Sales'); // Change this to your desired default tab
+        });
+    </script>
 </head>
 <body>
+    <!-- Loader -->
+    <div id="loader" class="loader">
+        <div class="spinner"></div>
+    </div>
 
-<div class="container mt-4">
-    <h2>My DataTable</h2>
-   <table class="table table-bordered table-hover table-condensed">
-<thead><tr><th title="Field #1">Period</th>
-<th title="Field #2">Name</th>
-<th title="Field #3">Member Name</th>
-<th title="Field #4">Attended</th>
-<th title="Field #5">New</th>
-<th title="Field #6">Not First Class</th>
-<th title="Field #7">Converted</th>
-<th title="Field #8">Not Converted</th>
-<th title="Field #9">Conversion %</th>
-</tr></thead>
-<tbody><tr>
-<td>2024-May</td>
-<td>P57 x Ace Blend Hosted Class</td>
-<td>Karan Seth</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ace Blend Hosted Class</td>
-<td>Rakshit Jain</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ace Blend Hosted Class</td>
-<td>Shivam Hingorani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ace Blend Hosted Class</td>
-<td>Utsav Jain</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x ACE BLEND&#39;S Hosted Class</td>
-<td>Aayushi Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x ACE BLEND&#39;S Hosted Class</td>
-<td>Jiya Arora</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x ACE BLEND&#39;S Hosted Class</td>
-<td>Mahek Nayak</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x ACE BLEND&#39;S Hosted Class</td>
-<td>Sanya Kamani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x ACE BLEND&#39;S Hosted Class</td>
-<td>Shravyaa Raviraj</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Amrita Chawla</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Anindita Chakraborty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Ektaa Bahirwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Garishma Rahul Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Karen Thompson</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Meher Bathija</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Neha Premjee</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Neha Wadhawan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Onita Bachani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Payal Bahirwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Prachi Sharma</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Samantha Noronha</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Amrita Chawla&#39;s Hosted Class</td>
-<td>Shilpa Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Aneesha Gaba&#39;s Hosted Class</td>
-<td>Aneesha Gaba</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Aneesha Gaba&#39;s Hosted Class</td>
-<td>Euphrecia Costa</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Aneesha Gaba&#39;s Hosted Class</td>
-<td>Gauri Zaveri</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Aneesha Gaba&#39;s Hosted Class</td>
-<td>Gitika Jagasia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Aneesha Gaba&#39;s Hosted Class</td>
-<td>Ishika Mohan Motwane</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Aneesha Gaba&#39;s Hosted Class</td>
-<td>Manasvi Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Aneesha Gaba&#39;s Hosted Class</td>
-<td>Puja Patel</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Aneesha Gaba&#39;s Hosted Class</td>
-<td>Rivoli Sinha</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Anoushka Kohli</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Anshika Verma</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Asu Lkr</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Jhanvi Lathia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>ksenia .</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Namrata Jadwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Nikita Golani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Pooja Nagpal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Raina Nagpal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Richa Rohra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Sakshi Bathija</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x BirdEye Hosted Class</td>
-<td>Stacey Cardoz</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Bhavana Phul</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Binal Trivedi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Farah Nathani-Menzies</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Farah Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Heena Nathani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Kanan Sangani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Kavita Chadda</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Kavita Premnarayen</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Madhuri Motwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Nishant Badami</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Ritika Arneja</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Farah &amp; Henna&#39;s Hosted Class</td>
-<td>Urmila Dabholkar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Aashika Joukani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Aparna Mulchandani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Araena Jadhwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>disha rawtani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Duhita Pariani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Ishna Batra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Jasu Bachher</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Manali Dhavan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Rachita Berry</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Richa Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Ritika Singh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Saniya Mehraj</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Sanya Teckchandani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Sneha Tandon</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Ishna Batra</td>
-<td>Sonam Katara</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereira</td>
-<td>Aaisha Nazim</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereira</td>
-<td>Ayman Contractor</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereira</td>
-<td>Delzeen Mistry</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereira</td>
-<td>Harisha Sewhani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereira</td>
-<td>Kimberley Pereria</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereira</td>
-<td>Sonakshi Malhotra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereira</td>
-<td>Vandana Nagrani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereria&#39;s Hosted class</td>
-<td>Anusha kala</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereria&#39;s Hosted class</td>
-<td>Diya Mansukhaney</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereria&#39;s Hosted class</td>
-<td>Kimberley Pereria</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereria&#39;s Hosted class</td>
-<td>Kuhu Singh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereria&#39;s Hosted class</td>
-<td>Natasha Glover</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereria&#39;s Hosted class</td>
-<td>Rohit Shetty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Kimberley Pereria&#39;s Hosted class</td>
-<td>Shaista SF</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Aarti Virwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Arjit .</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Bhakti Soni</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Divya Saini</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Gehna Datwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Gita Hariani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Jashika Mahtani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Kanisha .</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Majre Shetty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Mandovi Menon</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Megha Rawal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Nandita Virwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Neha C</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Rohan Mazumdar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Roma Punjabi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Samar Rajput</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Sanikaa Sainani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Seema Shetty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Sonam Luthria</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Susham Rohra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Sveltina Shroff</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story</td>
-<td>Tiana Kamte</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Avijit Singh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Avni Bathija</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Dolly Mehta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Kareshma .</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Karina Ramchandani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Mallika Mhatre</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Namrata Witte</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Natasha Singh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Pooja Mundra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Purvi Modi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Rashmi Devnani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Ritika Rajan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Sanam Jaisingh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Sapna Agarwal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Livingroom Story Hosted Class - Barre 57</td>
-<td>Sheil .</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story Sweat in 30</td>
-<td>Anuradha kaleti</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Livingroom Story Sweat in 30</td>
-<td>Seema Nath</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X LRS Hosted Class</td>
-<td>Ashmi Bhansoli</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X LRS Hosted Class</td>
-<td>Bhavna Jumani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X LRS Hosted Class</td>
-<td>Deiya Sindhi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X LRS Hosted Class</td>
-<td>Neha Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X LRS Hosted Class</td>
-<td>Sapna Mundra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X LRS Hosted Class</td>
-<td>Tanisha Bhatia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X LRS Hosted Class</td>
-<td>Vani Nath</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Annalouise Kanny</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Aparna Badlani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Arleen Gonsalves</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Ayesha Wadwala</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Catherine Simpon</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Delba Bestonse</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Imene Sharma</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Latoyah Trondade</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Mona Ahuja</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Neelam Bajwa</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Raman Mahil</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Reema Anand</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Rubaina Ali</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Suneera Madhok</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Mona Juneja</td>
-<td>Tamara Zweck</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Aanchal Vijan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Amrita Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Bhakti Badlani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Durvi Takhtani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Isha Chandhok</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Juhie Kothari</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Khushboo Lalwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Mehar Sethi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Pia Ahuja</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Rhea Jaising</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Sandhya Mohanani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Simran Luthria</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Sonam Luthria</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Suman Manik</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Namrata Jadwani’s Hosted Class</td>
-<td>Tina Takhtani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Natasha Hemani</td>
-<td>Anaheez Patel</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Natasha Hemani</td>
-<td>Anisha Jhaveri</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Natasha Hemani</td>
-<td>Hrutt Patel</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Natasha Hemani</td>
-<td>Kanak Kapadia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Natasha Hemani</td>
-<td>Natasha Hemani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Natasha Hemani</td>
-<td>Nikhar Tandon</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 X Natasha Hemani</td>
-<td>Tanisha Barav</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Aadya Apte</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Aditya Joshi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Ankit Bathija</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Aparna Garud</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Chelsea Dsouza</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Kushagra Dhonkariya</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Orville Dsouza</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Pritika Mathur</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Robin Das</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Roshni Chandurkar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Sanjana Bhatia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Shaun Pais</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shivani&#39;s Hosted Class</td>
-<td>Shivani Kolhapure</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Amrita Chhabria</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Emma Futtick</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Haranjan Kaur</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Henali Ajmera</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Kumkum Tiwari</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Manjit Kaur Malhotra</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Miloni Sanghvi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Neha Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Neha Parulekar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Noorie Desai</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Pooja Desai</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Prerna Sinha</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Priyam Jain</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Teena Swayyaw</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Shraddha&#39;s Hosted Class</td>
-<td>Tripti Bhatia Gandhi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Karishma Jumani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Louloua Ahemdabadwala</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Malvika Talwar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Neha Jaisingh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Nihal Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Preet Bhargava</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Priyanka Chawla</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Rajkumari gadodia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Riah Uchit</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Ritika Singh</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Saba Patel</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Simone Khambatta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Simone&#39;s Hosted Class</td>
-<td>Tanya Fraser</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Aarti Handa</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Ami Gupta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Ankeeta Khushalani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Asmita Chaddha</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Gautami Jain khatri</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Harshita Rohra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Jasmeen .</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Kashish Jethani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Khyati Daga</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Meeshka Babani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Nitika Rupani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Priyanka Bajaj</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Priyanka Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Riddhi Gala</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Ritika Sachdev</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Skimmy Gupta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Vaibhavi Babani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>P57 x Vaibhavi&#39;s Hosted Class</td>
-<td>Zeel Doshi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>ashna zaveri</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Avantika Chhabria</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Deepti Sati</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Drishti Gwalani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Kajal Kothari</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>nandini sharma</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Nikita Dhongdi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Prathiksha Shetty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Shanaya Sardesai</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Shivali Rijhwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Svetana Kanwar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Tanvi Thakkar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Vedika Mehta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-May</td>
-<td>Physique 57 x Kica Hosted Class</td>
-<td>Virali Parekh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>ACIW x P57 Hosted Class</td>
-<td>Kanika Kapoor</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>ACIW x P57 Hosted Class</td>
-<td>Namrata Kolachalam</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>ACIW x P57 Hosted Class</td>
-<td>Sheila Shetty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Deanne Pandey Hosted Class</td>
-<td>Deanne Pandey</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Deanne Pandey Hosted Class</td>
-<td>Monica Badekar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Deanne Pandey Hosted Class</td>
-<td>Renuka Vish</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Ladies Who Lead x P57 Hosted Class</td>
-<td>Devpriya Mohata</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Ladies Who Lead x P57 Hosted Class</td>
-<td>Fatima D Punjabi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Ladies Who Lead x P57 Hosted Class</td>
-<td>Maheswari Nair</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Ladies Who Lead x P57 Hosted Class</td>
-<td>Neha Bhatia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Ladies Who Lead x P57 Hosted Class</td>
-<td>prerna M</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Ladies Who Lead x P57 Hosted Class</td>
-<td>Sanchita Lohot</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Ladies Who Lead x P57 Hosted Class</td>
-<td>Sapna Keswani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Ladies Who Lead x P57 Hosted Class</td>
-<td>Vedika Chamria</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Aayushi Shelat</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Ayman Contractor</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Bani sachar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Deepshika Lunia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Esha Doshi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Garima Soni</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Kunali Maheshwari</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Minal Khushalani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Nida Peshimam</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Priyanshi Jain</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Rajvi Bhow</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Sanah Lele</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Sanjana Dedhia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Sanjana Parekh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Sanskruti Borgaonkar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>Nida’s Hosted Class at P57</td>
-<td>Shagun Singh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Ankita Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Elixir Nahar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Gunjan Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Khushnam Anklesaria</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Prachee Mashru</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>sadhvi shetty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Shanaya Makani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Shweta Kaushik</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Simran Gursahani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Varsha Patra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Elixir Nahar&#39;s Hosted Class</td>
-<td>Veronica Bahl</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Aditi Shanbhag</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Jessica Alphonso</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Mamta Darekar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Navya Premjit</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Neetika Satoor</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Pratik chordia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Rhea Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Rutvi Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Rhea Shah&#39;s Hosted Class</td>
-<td>Sanjana Desai</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Aananya Banaik</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Alina Khan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Ekta Khialani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Minal Mulani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Nitika Budhrani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Pooja Ajmera</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Pooja Parekh</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Radhika Nihalani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Rhea Pillai Rastogi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Rheya Ajmera</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Shweta Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Simran Luthria</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Sonam Luthria</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 x Simran’s Hosted Class</td>
-<td>Suchita Ranglani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 X Sisters in Sweat Hosted Class</td>
-<td>Adwitiya Dawn</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 X Sisters in Sweat Hosted Class</td>
-<td>Alfiya Khan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 X Sisters in Sweat Hosted Class</td>
-<td>Brinda Nair</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 X Sisters in Sweat Hosted Class</td>
-<td>Juhi T</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 X Sisters in Sweat Hosted Class</td>
-<td>Merlyn Matchavel</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 X Sisters in Sweat Hosted Class</td>
-<td>Nayantara Dutta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 X Sisters in Sweat Hosted Class</td>
-<td>Nikhat Nikhat</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jun</td>
-<td>P57 X Sisters in Sweat Hosted Class</td>
-<td>Saloni B</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Amy Dastur</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Astha Sharma</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Erika Packard</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Francesca Smith</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Janice Sequiera</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Netri Aggarwal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Priyanka Gupta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Rhea Jiandani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>Erika&#39;s Hosted Class</td>
-<td>Summer Jacobs</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Akansha Vora</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Bhavya Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Gaurvishika Dhing</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Geetika Chakravarti</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Heena Tank</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Karen Alfonso</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Kinjal Makharia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Mansi Maity</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Moumita Majumdar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Muskkan Rawat</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Nimisha Solanki Parekh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Nisha Joshi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Patricia Montario</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Pranati Rai Prakash</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Prerna Mehra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Ria Bhatia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Saadia Hossain</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Saanya Chowkulkar</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Sakina kankroliwala</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Shradha Ninawe</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Simran Luthria</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Sohini Dutta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x 82E Hosted Class</td>
-<td>Vaishnavi Bhatt</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x BA Hosted class</td>
-<td>Jiya Somaiya</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x BA Hosted class</td>
-<td>Keegan Stephons</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x BA Hosted class</td>
-<td>Param Daswani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x BA Hosted class</td>
-<td>Prachi Ranavat</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x BA Hosted class</td>
-<td>Prerna Parekh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x BA Hosted class</td>
-<td>Rohit Desai</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x BA Hosted class</td>
-<td>Sunita Somaiya</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Mumbai Connexions Hosted Class</td>
-<td>Andrea Wrumnig</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Mumbai Connexions Hosted Class</td>
-<td>Myra Junor</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Mumbai Connexions Hosted Class</td>
-<td>Sangeeta Kaul</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>CHANDINI TOLANI</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Mriganka Balani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Neetu Bawa</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Ragini Parmar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Rati Chaudhary</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Ritu Sharma</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Sakshi Mansukhani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Sanne Gandhi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Sayeeli Uchil</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Shilpa Rathnam</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Sonali Baid</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Sony Kunwar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x Rati’s Hosted Class</td>
-<td>Zaiba Contractor</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x SIS Hosted Class</td>
-<td>Juhi T</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Jul</td>
-<td>P57 x SIS Hosted Class</td>
-<td>sharanya srinivasan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Adhiraj Singh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Anshika Verma</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Bells Budse</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Daron Saldanha</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Dheeya Somaiya</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Elixir Nahar</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>George Varley</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Himanshu Shukla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Isabella Boscawen</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Oshin Sarin</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Elixir&#39;s powerCycle Hosted Class</td>
-<td>Vik Kapur</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Hoshang Govil</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Insiyal R</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Karishma Govil</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Khushi Govil</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Muskaan Madan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Shreya Sharma</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Souparnika Seshadrinathan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Trishala Sikka</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>P57 x Karishma&#39;s powerCycle Hosted Class</td>
-<td>Yash Parihar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Aishwarya - powerCycle Hosted Class</td>
-<td>Aishwarya Waichal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Aishwarya - powerCycle Hosted Class</td>
-<td>Muskan Rawat</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Aishwarya - powerCycle Hosted Class</td>
-<td>Sarah Dsilva</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Aishwarya - powerCycle Hosted Class</td>
-<td>Shaheen Khan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Aishwarya - powerCycle Hosted Class</td>
-<td>Tanishqa Jaiswal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Aishwarya - powerCycle Hosted Class</td>
-<td>Tanvi Gadre</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Aishwarya - powerCycle Hosted Class</td>
-<td>Vimi Punjabi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Anjan Sachar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Anushree Sheth</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Devika Kedia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Dimple Ailsinghani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Jaanvi Gogia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Nitika Jaisingh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Sakina Aga</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Simran Makhija</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Simran Mehta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Taniya Gaba</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Tatiana Dias</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Anjan Sachar - powerCycle Hosted Class</td>
-<td>Vizaya Dias</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Alicia Chen</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Anushna cherian</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Anushree Sardesai</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Bhavya Dwivedi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>nandini sharma</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Neha Mishra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Neha Premjee</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Niteesha Tolani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Priyanka Talreja</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Saasha Bhojwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Sachi Maker</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Siddhi Charan</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Anushree Sardesai - powerCycle Hosted Class</td>
-<td>Siddiq Jaka</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Arzoo Karnani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Binal Trivedi</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Farah Nathani-Menzies</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Farah Shah</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>GAUTAM KARNANI</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Henna Nathani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Mallika Sarkar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Mohammed Suterwalla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Pia Trivedi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Prayas kharbadikar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Henna Nathani&#39;s powerCycle Hosted class</td>
-<td>Rina Nathani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Faiz Thakur</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Karishma Kirpalani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Mehar Satsangi</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Natasha Merchant</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Navin Khilnani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Nayantara Menon</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Niteesha Tolani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Shaan Lalwani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Smriti Deora</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Tiana Taraporvala</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Udai Chopra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Karishma&#39;s powerCycle Class</td>
-<td>Varun Bhatt</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Cycle</td>
-<td>Akshar Patel</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Cycle</td>
-<td>Kavisha Sheth</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Cycle</td>
-<td>Parth Choksi</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Cycle</td>
-<td>Rajvi Vora</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Cycle</td>
-<td>Saana Choksi</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Cycle</td>
-<td>Shikha Jain</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Class</td>
-<td>Aarushi waghani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Class</td>
-<td>kripa mehta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Class</td>
-<td>Ruchika Vyas</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Class</td>
-<td>Simran Shukla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Class</td>
-<td>Sonika Mehra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Class</td>
-<td>Surbhi Shukla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x LRS powerCycle Hosted Class</td>
-<td>Zoe Green</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Aakanksha Jain</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Jiahjeet S</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Kiran Malik</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Liza Agarwal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Nabil Mahimwala</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Richa Kotian</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Sanjana Chowhan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Smriti Kariwal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Snehal Bhadane</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 X Networking Now - powerCycle Hosted Class</td>
-<td>Srishti Mehra</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Aahan Sethi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Ankita Gupta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>deeven patel</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Jiahjeet S</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Karishma Agrawal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Krisha Bathija</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Muskaan Ahuja</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Rayomand B</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Sakshi Shetty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Sanjana Shetty</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Networking Now&#39;s Hosted powerCycle Class</td>
-<td>Smridhi Sharma</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Otters Club powerCycle Hosted Class</td>
-<td>Devika B</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Otters Club powerCycle Hosted Class</td>
-<td>Honey Agarwal</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x Otters Club powerCycle Hosted Class</td>
-<td>Sakshi Nasta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Abrin Shaikh</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Akshita Goel</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Drishti Surti</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Jaanvi Advani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Juhi T</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Jyoti Chauhan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Nikhila Makker</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Saloni Bhatia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Shweta Bhatia</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physique 57 x SIS Hosted Class</td>
-<td>Vera Dsouza</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Aparna Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Ayushi Aggarwal</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Duhita Pariani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Jinal Merchant</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Mili Jhaveri</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Nidhi Khanna</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Nishtha Desai</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Priyanka Birani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Riddhi Mehta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Rubaina Adhikari</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Aug</td>
-<td>Physiqye 57 x Aparna Shah&#39;s powerCycle Hosted Class</td>
-<td>Sinali Choksey</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Alison&#39;s Hosted Class</td>
-<td>Aditya Karmakar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Alison&#39;s Hosted Class</td>
-<td>Alison Woodham</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Alison&#39;s Hosted Class</td>
-<td>Pallavi Das</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Alison&#39;s Hosted Class</td>
-<td>Szena Alummood</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Ayesha Mehta</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Bani sachar</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Ishna Batra</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Jeet Tailor</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Karan Sharma</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Karishma Sheth</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Lenishka Gangwani</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Shiv Sawhney</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Simran Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ayesha Mehta&#39;s Hosted Class</td>
-<td>Trishala Sikka</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>aisha agboatwala</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>Delzeen Mistry</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>Dineez Surti</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>Jenai Golvala</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>Mehr Chawla</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>rheanne vakil</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>ruhi jain</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>SAMYA AVLANI</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>Sia Diwan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>trishaa anchan</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Delzeen powerCycle Hosted Class</td>
-<td>Zara Cassum</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ladies who Lead powerCycle Hosted Class</td>
-<td>Aarti Sharoff</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ladies who Lead powerCycle Hosted Class</td>
-<td>Aastha Jain</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ladies who Lead powerCycle Hosted Class</td>
-<td>Janhavi Katkar</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ladies who Lead powerCycle Hosted Class</td>
-<td>Shagoofa RK</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Ladies who Lead powerCycle Hosted Class</td>
-<td>Vedika Chamria</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Natasha&#39;s powerCycle Hosted Class</td>
-<td>Natasha Hemani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Natasha&#39;s powerCycle Hosted Class</td>
-<td>Pallavi Das</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>100%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Natasha&#39;s powerCycle Hosted Class</td>
-<td>Shreya Punjabi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Otters Club powerCycle Hosted Class</td>
-<td>Nishuti Parulekar</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Otters Club powerCycle Hosted Class</td>
-<td>Sana Shafi</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Zahra Vakil&#39;s Hosted Barre Class</td>
-<td>Diva Ghanshani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Zahra Vakil&#39;s Hosted Barre Class</td>
-<td>Gitika Jagasia</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Zahra Vakil&#39;s Hosted Barre Class</td>
-<td>Natalia Mistry</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Zahra Vakil&#39;s Hosted Barre Class</td>
-<td>Rhea Marwah</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Zahra Vakil&#39;s Hosted Barre Class</td>
-<td>Sarrah Sakarwala</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Zahra Vakil&#39;s Hosted Barre Class</td>
-<td>Simran Shah</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Sep</td>
-<td>Physique 57 x Zahra Vakil&#39;s Hosted Barre Class</td>
-<td>Zahra Vakil</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Oct</td>
-<td>powerCycle - COLDPLAY 🎆</td>
-<td>Aalisha Lakdawala</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Oct</td>
-<td>powerCycle - COLDPLAY 🎆</td>
-<td>Priyanka Singh</td>
-<td>1</td>
-<td>1</td>
-<td> </td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Oct</td>
-<td>powerCycle - COLDPLAY 🎆</td>
-<td>Reyna Jagtiani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Oct</td>
-<td>powerCycle - COLDPLAY 🎆</td>
-<td>Sharon Mittal</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Oct</td>
-<td>powerCycle - COLDPLAY 🎆</td>
-<td>Simran Shahani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-<tr>
-<td>2024-Oct</td>
-<td>powerCycle - COLDPLAY 🎆</td>
-<td>Simran Wadhwani</td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td> </td>
-<td>1</td>
-<td>0%</td>
-</tr>
-</tbody></table>
-</div>
+    <button class="toggle-sidebar">☰</button>
 
-<!-- Bootstrap JS, DataTables JS, and other dependencies -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-<script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/jszip-3.10.1/dt-2.1.8/af-2.7.0/b-3.1.2/b-colvis-3.1.2/b-html5-3.1.2/b-print-3.1.2/cr-2.0.4/date-1.5.4/fc-5.0.3/fh-4.0.1/kt-2.12.1/r-3.0.3/rg-1.5.0/rr-1.5.0/sc-2.4.3/sb-1.8.1/sp-2.3.3/sl-2.1.0/sr-1.4.1/datatables.min.js"></script>
+    <div class="sidebar">
+        <h2>Performance Review</h2>
+        <nav>
+            <a href="javascript:void(0);" onclick="openTab('PerformanceReview')">Metrics</a>
+            <a href="javascript:void(0);" onclick="openTab('Sales')">Sales</a>
+            <a href="javascript:void(0);" onclick="openTab('TrainerPerformance')">Trainer Performance</a>
+            <a href="javascript:void(0);" onclick="openTab('LeadAnalysis')">Lead Analysis</a>
+            <a href="javascript:void(0);" onclick="openTab('Visits')">Visits</a>
+            <a href="javascript:void(0);" onclick="openTab('TopBottom')">Top & Bottom</a>
+        </nav>
+    </div>
 
-<script>
-    // Initialize DataTable
-    $(document).ready(function() {
-        $('#example').DataTable({
-            responsive: true,  // Responsive design
-            dom: 'Bfrtip',     // Include buttons for export options
-            buttons: [
-                'copy', 'csv', 'excel', 'pdf', 'print'
-            ]
-        });
-    });
-</script>
+    <div class="content">
+        <h1>Performance Dashboard</h1>
+        <select id="locationSelect">
+            <option value="Supreme HQ, Bandra">Supreme HQ, Bandra</option>
+            <option value="Kwality House, Kemps Corner">Kwality House, Kemps Corner</option>
+            <option value ="Kenkere House">Kenkere House</option>
+            <option value="Physique 57 - Mumbai ">Physique 57 - Mumbai</option>
+            <option value="Physique 57 - Bengaluru">Physique 57 - Bengaluru</option>
+        </select>
+        <button id="reloadBtn" onclick="fetchData()">Reload Data</button>
 
+        <!-- Scorecards -->
+        <div class="scorecards">
+            <!-- Scorecards will be dynamically generated -->
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-container">
+            <table id="dataTable"></table>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-container">
+            <div class="chart">
+                <canvas id="discountVsSalesChart"></canvas>
+            </div>
+            <div class="chart">
+                <canvas id="atvVsAuvChart"></canvas>
+            </div>
+        </div>
+
+        <div id="Sales" class="tab-content" style="display: block;">
+            <select id="locationSelect">
+                <option value="Kwality House, Kemps Corner">Kwality House, Kemps Corner</option>
+                <option value="Supreme HQ, Bandra">Supreme HQ, Bandra</option>
+            </select>
+            <div>
+                <input type="radio" id="unitsRadio" name="dataType" value="units" checked>
+                <label for="unitsRadio">Units</label>
+                <input type="radio" id="valueRadio" name="dataType" value="value">
+                <label for="valueRadio">Value</label>
+                <input type="radio" id="percentageRadio" name="dataType" value="percentage">
+                <label for="percentageRadio">Percentage</label>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Oct-24</th>
+                        <th>Sep-24</th>
+                        <th>Aug-24</th>
+                        <th>Jul-24</th>
+                        <th>Jun-24</th>
+                        <th>May-24</th>
+                        <th>Apr-24</th>
+                        <th>Mar-24</th>
+                        <th>Feb-24</th>
+                        <th>Jan-24</th>
+                        <th>YTD</th>
+                        <th>Average</th>
+                    </tr>
+                </thead>
+                <tbody id="salesTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>
